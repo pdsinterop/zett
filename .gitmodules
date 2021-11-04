@@ -1,0 +1,6 @@
+[submodule "simply-edit-backend"]
+	path = simply-edit-backend
+	url = git@github.com:simplyedit/simply-edit-backend
+[submodule "login-helper"]
+	path = login-helper
+	url = git@github.com:SimplyEdit/login-helper.git
