@@ -4,3 +4,6 @@
 [submodule "login-helper"]
 	path = login-helper
 	url = git@github.com:SimplyEdit/login-helper.git
+[submodule "simplyview"]
+	path = simplyview
+	url = git@github.com:simplyedit/simplyview
