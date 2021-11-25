@@ -33,10 +33,42 @@ const app = simply.app({
                 document.querySelector('#'+newEntity.id).classList.remove('zett-pre-entity');
                 document.querySelector('#'+newEntity.id+' input[name=name]').focus();
             }, 100);
+        },
+        'showAddFileDialog': (el, value) => {
+            document.getElementById('addFileDialog').setAttribute('open','open');
+        },
+        'closeDialog': (el,value) => {
+            el.closest('dialog').removeAttribute('open');
+        },
+        'addFile': (form, values) => {
+            document.getElementById('addFileDialog').removeAttribute('open');
+            app.actions.addFile(values.url).then(() => {
+                window.setTimeout(() => {
+                    document.querySelector('.zett-entity').classList.remove('zett-pre-entity');
+                    document.querySelector('.zett-entity [name="value"]').focus();
+                }, 100);
+            })
+            .catch(error => {
+                app.view.fetchUrl = values.url;
+                document.getElementById('setIssuer').setAttribute('open','open');
+            })
+        },
+        'login': (form, values) => {
+            document.getElementById('setIssuer').removeAttribute('open');
+            return app.actions.connect(values.issuer, values.url)
+            .then(() => app.actions.addFile(values.url));
         }
     },
     actions: {
-        connect: issuer => solidApi.connect(issuer),
+        addFile: url => {
+            return solidApi.fetch(url)
+            .then(data => mergeSubjects(data, url))
+            .then(data => {
+                app.view.worksheets[0].files[0] = { name: 'iets', url, data};
+                return data;
+            });
+        },
+        connect: (issuer,url) => solidApi.connect(issuer,url),
         disconnect: () => solidApi.disconnect(),
         showEntity: (index) => {
         }
@@ -49,6 +81,7 @@ const app = simply.app({
             {
                 name: 'new worksheet',
                 files: [
+/*
                     {
                         name: 'new file',
                         url: '',
@@ -65,6 +98,7 @@ const app = simply.app({
                             }
                         ]
                     }
+*/
                 ],
                 ontologies: [
                     {
@@ -86,20 +120,73 @@ const app = simply.app({
     }
 });
 
+function mergeSubjects(data, baseUrl) {
+    var subjects = {};
+    data.forEach(rule => {
+        let subject = rule.subject.value;
+        let predicate = rule.predicate.value;
+        let object = rule.object.value;
+        if (object.startsWith(baseUrl)) {
+            object = object.substring(baseUrl.length);
+        }
+        if (!subjects[subject]){
+            let id = applyPrefix(subject);
+            if (subject.startsWith(baseUrl)) {
+                id = subject.substring(baseUrl.length);
+            }
+            subjects[subject] = {
+                id: id,
+                type: '',
+                records: []
+            };
+        }
+        if (predicate == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
+            subjects[subject].type = object;
+        } else {
+            predicate = applyPrefix(predicate);
+            object = applyPrefix(object);
+            subjects[subject].records.push({
+                name: predicate,
+                value: object
+            });
+        }
+    });
+    return Object.values(subjects);
+}
+
+function applyPrefix(url) {
+    for (const [prefix, purl] of Object.entries(prefixes)) {
+        if (url.startsWith(purl)) {
+            return prefix+':'+url.substring(purl.length);
+        }
+    }
+    return url;
+}
+
 const solidSession = getDefaultSession();
+
+const prefixes = {};
 
 const solidApi = {
     fetch: function(url) {
         const parser = new Parser({blankNodePrefix: '', baseIRI: url});
         return solidSession.fetch(url)
-            .then(response => response.text())
-            .then(text => parser.parse(text));
+            .then(response => {
+                if (response.ok) {
+                    return response.text();
+                } else {
+                    throw new Error('not ok');
+                }
+            })
+            .then(text => parser.parse(text, null, (prefix, url) => { prefixes[prefix] = url.id }));
     },
-    connect: function(issuer) {
+    connect: function(issuer, resourceUrl) {
         if (solidSession.info && solidSession.info.isLoggedIn === false) {
+            let url = new URL(window.location);
+            url.searchParams.set('resourceUrl', resourceUrl);
             return solidSession.login({
                 oidcIssuer: issuer,
-                redirectUrl: window.location.href,
+                redirectUrl: url.href
             })
         }
         return solidSession.info
@@ -120,4 +207,23 @@ const solidApi = {
 };
 
 window.app = app;
-window.soliApi = solidApi;
+window.solidApi = solidApi;
+window.solidSession = solidSession;
+
+solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousSession: true})
+.then(() => {
+    if (window.location.search) {
+        let search = new URLSearchParams(window.location.search);
+        let resourceUrl = search.get('resourceUrl');
+        if (resourceUrl) {
+            app.actions.addFile(resourceUrl).then(() => {
+                window.setTimeout(() => {
+                    document.querySelector('.zett-entity').classList.remove('zett-pre-entity');
+                    document.querySelector('.zett-entity [name="value"]').focus();
+                }, 100);
+            });
+            history.replaceState({}, window.title, window.location.pathname);
+        }
+    }
+});
+

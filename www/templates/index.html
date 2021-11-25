@@ -8,6 +8,23 @@
     <meta name="robots" data-simply-field="meta robots" content="index, follow">
     <link rel="shortcut icon" href="/favicon.ico">
     <link rel="stylesheet" href="/assets/css/styles.css">
+    <style>
+        .ds-center-center {
+            position: absolute;
+            top:  50%;
+            left:  50%;
+            transform: translate(-50%, -50%);
+        }
+        .ds-dialog-close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            z-index: 11;
+            min-width:  var(--ds-spacing);
+            text-align:  center;
+            color:  var(--ds-white);
+        }
+    </style>
     <title data-simply-field="meta title">Zett: A solid editor</title>
 </head>
 <body class="zett">
@@ -20,11 +37,11 @@
                         <li><a href="#newfile">New File</a></li>
                     </ul>
                     <footer>
-                        <button class="ds-button">Add File</button>
+                        <button class="ds-button" data-simply-command="showAddFileDialog">Add File</button>
                     </footer>
                 </nav>
                 <footer>
-                    <button class="ds-button">Add Worksheet</button>
+                    <button class="ds-button" data-simply-command="addWorksheet">Add Worksheet</button>
                 </footer>
             </div>
             <div class="zett-panes">
@@ -32,15 +49,21 @@
                     <label style="margin-bottom: 2.5em;" data-simply-field="worksheets.0.files.0.name">New File</label>
                     <div class="zett-pane-data" data-simply-list="worksheets.0.files.0.data">
                         <template>
-                            <div class="zett-entity ds-shadow-medium ds-space-inside ds-bg-white" data-simply-field="id" data-simply-content="attributes" data-simply-attributes="id">
+                            <div class="zett-pre-entity zett-entity ds-shadow-medium ds-space-inside ds-bg-white" data-simply-field="id" data-simply-content="attributes" data-simply-attributes="id">
                                 <button class="ds-button ds-button-naked zett-delete" data-simply-command="delete-entity">
                                     <svg class="ds-icon ds-icon-feather">
                                         <use xlink:href="/assets/icons/feather-sprite.svg#x"></use>
                                     </svg>
                                 </button>
-                                <div class="ds-badge zett-entry-type">
-                                    <label>type</label>
-                                    <input class="zett-inline" type="text" value="tmo:Task" data-simply-field="type" list="zett-elements">
+                                <div class="zett-entry-type">
+                                    <div class="ds-badge">
+                                        <label>type</label>
+                                        <input class="zett-inline" type="text" value="tmo:Task" data-simply-field="type" list="zett-elements">
+                                    </div>
+                                    <div class="ds-badge ds-inline">
+                                        <label>id</label>
+                                        <input class="zett-inline" type="text" value="id" data-simply-field="id">
+                                    </div>
                                 </div>
                                 <div class="records" data-simply-list="records">
                                     <template data-simply-template="default">
@@ -76,6 +99,45 @@
             </div>
         </section>
     </main>
+
+    <dialog class="ds-dialog ds-center-center" id="addFileDialog">
+        <button data-simply-command="closeDialog" class="ds-dialog-close ds-button ds-button-light ds-button-close">
+            <svg class="ds-icon ds-icon-feather">
+                <use xlink:href="/assets/icons/feather-sprite.svg#x-circle">
+            </use></svg>
+        </button>
+        <div class="ds-dialog-header ds-bg-support">
+            <h2 class="ds-space-horizontal">Add a resource to your worksheet</h2>
+        </div>
+        <div class="ds-dialog-content">
+            <form class="ds-space ds-margin-up" data-simply-command="addFile">
+                <label>URL:
+                    <input type="url" name="url">
+                </label>
+                <button class="ds-button ds-button-primary" type="submit">Add</button>
+            </form>
+        </div>
+    </dialog>
+    <dialog class="ds-dialog ds-center-center" id="setIssuer">
+        <button data-simply-command="closeDialog" class="ds-dialog-close ds-button ds-button-light ds-button-close">
+            <svg class="ds-icon ds-icon-feather">
+                <use xlink:href="/assets/icons/feather-sprite.svg#x-circle">
+            </use></svg>
+        </button>
+        <div class="ds-dialog-header ds-bg-support">
+            <h2 class="ds-space-horizontal">Enter your WebID</h2>
+        </div>
+        <div class="ds-dialog-content">
+            <form class="ds-space ds-margin-up" data-simply-command="login">
+                <label>Solid WebID:
+                    <input type="url" name="issuer">
+                </label>
+                <input type="hidden" name="url" value="" data-simply-field="fetchUrl">
+                <button class="ds-button ds-button-primary" type="submit">Login</button>
+            </form>
+        </div>
+    </dialog>
+    <div class="ds-dialog-overlay"></div>
     
     <datalist id="zett-terms">
         <option>dc:title</option>
@@ -89,7 +151,7 @@
     </datalist>
 
     <script src="/assets/js/simplyview/simply.everything.js"></script>
-    <script src="//canary.simplyedit.io/1/simply-edit.js" data-storage="none"></script>
+    <script src="//canary.simplyedit.io/1/simply-edit.js" data-simply-storage="none"></script>
     <script src="/assets/js/app.js" type="module"></script>
 </body>
 </html>
