@@ -1,56 +1,95 @@
 <!doctype html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" data-simply-field="meta description" content="">
-        <meta name="author" data-simply-field="meta author"content="simplyedit">
-        <meta name="robots" data-simply-field="meta robots" content="index, follow">
-        <link rel="shortcut icon" href="/favicon.ico">
-        <link rel="stylesheet" href="/assets/css/hyper-layout.css">
-        <link rel="stylesheet" href="/assets/design/styles.css">
-        <link rel="preload" href="/assets/design/pages.html" as="fetch">
-        <title data-simply-field="meta title">SimplyEdit Start</title>
-    </head>
-    <body>
-        <link rel="simply-include" href="/assets/design/pages.html">
-
-        <header class="hyper-layout-sticky hyper-layout-fixed-size">
-            Header
-        </header>
-
-        <main class="hyper-layout hyper-layout-pages" data-simply-list="hyper-pages" data-simply-data="hyper-pages">
-            <template>
-                <div data-simply-path="/" data-simply-field="data-simply-path" data-simply-content="attributes" data-simply-attributes="data-simply-path">
-                    <div data-simply-field="data-simply-template" data-simply-content="template">
-                        <template data-simply-template="default" rel="default"></template>
-                        <template data-simply-template="bar" rel="bar"></template>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" data-simply-field="meta description" content="">
+    <meta name="author" data-simply-field="meta author"content="simplyedit">
+    <meta name="robots" data-simply-field="meta robots" content="index, follow">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/assets/css/styles.css">
+    <title data-simply-field="meta title">Zett: A solid editor</title>
+</head>
+<body class="zett">
+    <main>
+        <section class="zett-worksheet">
+            <div class="zett-sidebar">
+                <nav>
+                    <header>New Worksheet</header>
+                    <ul>
+                        <li><a href="#newfile">New File</a></li>
+                    </ul>
+                    <footer>
+                        <button class="ds-button">Add File</button>
+                    </footer>
+                </nav>
+                <footer>
+                    <button class="ds-button">Add Worksheet</button>
+                </footer>
+            </div>
+            <div class="zett-panes">
+                <div class="zett-pane ds-space-inside" id="newfile">
+                    <label style="margin-bottom: 2.5em;" data-simply-field="worksheets.0.files.0.name">New File</label>
+                    <div class="zett-pane-data" data-simply-list="worksheets.0.files.0.data">
+                        <template>
+                            <div class="zett-entity ds-shadow-medium ds-space-inside ds-bg-white" data-simply-field="id" data-simply-content="attributes" data-simply-attributes="id">
+                                <button class="ds-button ds-button-naked zett-delete" data-simply-command="delete-entity">
+                                    <svg class="ds-icon ds-icon-feather">
+                                        <use xlink:href="/assets/icons/feather-sprite.svg#x"></use>
+                                    </svg>
+                                </button>
+                                <div class="ds-badge zett-entry-type">
+                                    <label>type</label>
+                                    <input class="zett-inline" type="text" value="tmo:Task" data-simply-field="type" list="zett-elements">
+                                </div>
+                                <div class="records" data-simply-list="records">
+                                    <template data-simply-template="default">
+                                        <div class="ds-form-group">
+                                            <input type="text" class="ds-narrow" value="" list="zett-terms" data-simply-field="name">
+                                            <input type="text" name="dct:title" value="" data-simply-field="value">
+                                        </div>
+                                    </template>
+                                    <template data-simply-template="blank">
+                                        todo
+                                    </template>
+                                </div>
+                                <form data-simply-command="addRecord">
+                                    <div class="ds-form-group">
+                                        <input type="text" class="ds-narrow" name="name" value="" list="zett-terms">
+                                        <input type="text" name="value" placeholder="Enter any data" value="">
+                                        <button type="submit" class="ds-button ds-button-primary zett-button">
+                                            <svg class="ds-icon ds-icon-feather">
+                                                <use xlink:href="/assets/icons/feather-sprite.svg#plus"></use>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </template>
                     </div>
+                    <button data-simply-command="addEntity" class="ds-space-vertical ds-button ds-button-primary zett-button">
+                        <svg class="ds-icon ds-icon-feather">
+                            <use xlink:href="/assets/icons/feather-sprite.svg#plus"></use>
+                        </svg>
+                    </button>
                 </div>
-            </template>
-        </main>
+            </div>
+        </section>
+    </main>
+    
+    <datalist id="zett-terms">
+        <option>dc:title</option>
+        <option>dc:description</option>
+    </datalist>
+    <datalist id="zett-elements">
+        <option>skos:Collection</option>
+        <option>person:Person</option>
+        <option>schema:Organization</option>
+        <option>tmo:Task</option>
+    </datalist>
 
-        <footer class="hyper-layout-fixed-size">
-            Footer
-        </footer>
-
-        <div class="hyper-layout-layer hyper-layout-fixed-position hyper-hidden hyper-layout-layer-1000 hyper-layout-full-size">
-            
-            <dialog data-simply-dialog="my-dialog" class="hyper-layout-center-both">Dialog <button data-simply-command="closeDialog" data-simply-value="my-dialog">x</button></dialog>
-
-            <div class="hyper-layout-backdrop"></div>
-        </div>
-
-        <script src="/assets/js/simplyview/simply.everything.js"></script>
-        <script src="/assets/js/settings.js"></script>
-        <script src="//cdn.simplyedit.io/1/simply-edit.js" 
-            data-api-key="muze"
-            data-simply-images="/img/"
-            data-simply-files="/files/"
-            data-simply-settings="seSettings"
-            data-storage-get-post-only
-        ></script>
-        <script src="/assets/js/simplyedit-helper.js"></script>
-        <script src="/assets/js/app/app.js"></script>
-    </body>
+    <script src="/assets/js/simplyview/simply.everything.js"></script>
+    <script src="//canary.simplyedit.io/1/simply-edit.js" data-storage="none"></script>
+    <script src="/assets/js/app.js" type="module"></script>
+</body>
 </html>
