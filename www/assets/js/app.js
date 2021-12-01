@@ -80,40 +80,8 @@ const app = simply.app({
         worksheets: [
             {
                 name: 'new worksheet',
-                files: [
-/*
-                    {
-                        name: 'new file',
-                        url: '',
-                        data: [
-                            {
-                                id: 'id1',
-                                type: 'tmo:Task',
-                                records: [
-                                    {
-                                        name: 'dct:title',
-                                        value: 'A title'
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-*/
-                ],
-                ontologies: [
-                    {
-                        prefix: 'dc',
-                        url: 'http://purl.org/dc/elements/1.1/'
-                    },
-                    {
-                        prefix: 'dct',
-                        url: 'http://purl.org/dc/terms/'
-                    },
-                    {
-                        prefix: 'rdf',
-                        url: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
-                    }
-                ],
+                files: [],
+                ontologies: [],
                 queries: []
             }
         ]
@@ -178,7 +146,11 @@ const solidApi = {
                     throw new Error('not ok');
                 }
             })
-            .then(text => parser.parse(text, null, (prefix, url) => { prefixes[prefix] = url.id }));
+            .then(text => parser.parse(
+                text, 
+                null, 
+                (prefix, url) => { prefixes[prefix] = url.id }
+            ));
     },
     connect: function(issuer, resourceUrl) {
         if (solidSession.info && solidSession.info.isLoggedIn === false) {
@@ -212,8 +184,8 @@ window.solidSession = solidSession;
 
 solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousSession: true})
 .then(() => {
-    if (window.location.search) {
-        let search = new URLSearchParams(window.location.search);
+    let search = new URLSearchParams(window.location.search);
+    if (search.has('resourceUrl') && solidSession.info && solidSession.info.isLoggedIn) {
         let resourceUrl = search.get('resourceUrl');
         if (resourceUrl) {
             app.actions.addFile(resourceUrl).then(() => {
@@ -227,3 +199,155 @@ solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousS
     }
 });
 
+(function() {
+    let selectionStart = 0;
+
+    function focus(input, range=null) {
+        input.focus();        
+        if (range) {
+            input.setSelectionRange(range[0], range[1]);
+        } else {
+            input.setSelectionRange(selectionStart, selectionStart);
+        }
+        var selectedCard = document.querySelector('.zett-entity:not(.zett-pre-entity)');
+        var currentCard = input.closest('.zett-entity');
+        if (currentCard != selectedCard) {
+            selectedCard.classList.add('zett-pre-entity');
+            selectedCard.scrollTo(0,0);
+            currentCard.classList.remove('zett-pre-entity');
+        }
+    }
+
+    function keepSelection(input) {
+        if (input.value.length>selectionStart) {
+            selectionStart = input.selectionStart;
+        } else {
+            if (input.selectionStart<input.value.length) {
+                selectionStart = input.selectionStart;
+            }
+        }
+    }
+
+    let keys = {
+        'ArrowDown': (e) => {
+            if (e.target && e.target.tagName=='INPUT') {
+                keepSelection(e.target);
+                let inputs = document.querySelectorAll('input[name="'+e.target.name+'"]');
+                for (let i=0; i<inputs.length; i++) {
+                    if (inputs[i]===e.target) {
+                        let next = inputs[i+1];
+                        if (next) {
+                            focus(next);
+                        }
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        },
+        'ArrowUp': (e) => {
+            if (e.target && e.target.tagName=='INPUT') {
+                keepSelection(e.target);
+                let inputs = document.querySelectorAll('input[name="'+e.target.name+'"]');
+                for (let i=0; i<inputs.length; i++) {
+                    if (inputs[i]===e.target) {
+                        let prev = inputs[i-1];
+                        if (prev) {
+                            focus(prev);
+                        }
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        },
+        'ArrowLeft': (e) => {
+            if (e.target && e.target.tagName=='INPUT') {
+                if (e.target.selectionStart>0) {
+                    return;
+                }
+                let inputs = document.querySelectorAll('input');
+                for (let i=0; i<inputs.length; i++) {
+                    if (inputs[i]===e.target) {
+                        let prev = inputs[i-1];
+                        if (prev) {
+                            focus(prev);
+                        }
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        },
+        'ArrowRight': (e) => {
+            if (e.target && e.target.tagName=='INPUT') {
+                if (e.target.selectionEnd<e.target.value.length) {
+                    return;
+                }
+                let inputs = document.querySelectorAll('input');
+                for (let i=0; i<inputs.length; i++) {
+                    if (inputs[i]===e.target) {
+                        let next = inputs[i+1];
+                        if (next) {
+                            focus(next, [0,0]);
+                        }
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        },
+        'PageDown': (e) => {
+            // TODO: support multiple open files
+            var selectedCard = document.querySelector('.zett-entity:not(.zett-pre-entity)');
+            var cards =  document.querySelectorAll('.zett-entity');
+            for (let i=0; i<cards.length; i++) {
+                if (cards[i]===selectedCard) {
+                    let next = cards[i+1];
+                    if (next) {
+                        let input = next.querySelector('input[name="value"]');
+                        focus(input, [0,0]);
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        },
+        'PageUp': (e) => {
+            // TODO: support multiple open files
+            var selectedCard = document.querySelector('.zett-entity:not(.zett-pre-entity)');
+            var cards =  document.querySelectorAll('.zett-entity');
+            for (let i=0; i<cards.length; i++) {
+                if (cards[i]===selectedCard) {
+                    let prev = cards[i-1];
+                    if (prev) {
+                        let input = prev.querySelector('input[name="value"]');
+                        focus(input, [0,0]);
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+            }
+        },
+        'Enter': (e) => {
+            if (e.target && e.target.tagName=='INPUT') {
+                if (e.target.closest('form')) {
+                    return; // handle form enters normally
+                }
+                let records = e.target.closest('[data-simply-list="records"]');
+                debugger;
+            }            
+            e.preventDefault();
+            return false;
+        }
+    };
+
+    window.addEventListener('keydown', (e) => {
+        if (e.defaultPrevented) {
+            return;
+        }
+        if (keys[e.code]) {
+            keys[e.code](e);
+        }
+    });
+})();
