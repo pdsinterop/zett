@@ -57,14 +57,46 @@ const app = simply.app({
             document.getElementById('setIssuer').removeAttribute('open');
             return app.actions.connect(values.issuer, values.url)
             .then(() => app.actions.addFile(values.url));
-        }
+        },
+		'showEntity': (el, value) => {
+            var selectedCard = document.querySelector('.zett-entity:not(.zett-pre-entity)');
+            if (el != selectedCard) {
+                selectedCard.classList.add('zett-pre-entity');
+                selectedCard.scrollTo(0,0);
+                el.classList.remove('zett-pre-entity');
+				let firstInputValue = el.querySelector('input[name="value"]');
+				if (!firstInputValue) {
+					return;
+				}
+				let activeElement = document.activeElement;
+				if (!activeElement || document.activeElement.tagName!='INPUT') {
+					firstInputValue.focus();
+					return;
+				}
+            }
+		},
+		'selectFile': (el, value) => {
+			let pane = el.closest('.zett-pane');
+			if (pane) {
+				let index = pane.d;
+			}
+		}
     },
     actions: {
         addFile: url => {
             return solidApi.fetch(url)
             .then(data => mergeSubjects(data, url))
             .then(data => {
-                app.view.worksheets[0].files[0] = { name: 'iets', url, data};
+				let worksheet = app.view.worksheet;
+				if (!worksheet) {
+					worksheet = 0;
+					app.view.worksheet = 0;
+				}
+				if (!app.view.worksheets[worksheet]) {
+					app.view.worksheets[worksheet] = { name: 'new worksheet', files: [] };
+				}
+                app.view.worksheets[worksheet].files.push( { name: url.split('/').pop(), url, data} );
+				app.view.file = app.view.worksheets[worksheet].files.length - 1;
                 return data;
             });
         },
@@ -209,13 +241,6 @@ solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousS
         } else {
             input.setSelectionRange(selectionStart, selectionStart);
         }
-        var selectedCard = document.querySelector('.zett-entity:not(.zett-pre-entity)');
-        var currentCard = input.closest('.zett-entity');
-        if (currentCard != selectedCard) {
-            selectedCard.classList.add('zett-pre-entity');
-            selectedCard.scrollTo(0,0);
-            currentCard.classList.remove('zett-pre-entity');
-        }
     }
 
     function keepSelection(input) {
@@ -346,8 +371,21 @@ solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousS
         if (e.defaultPrevented) {
             return;
         }
+		if (!e.target || !e.target.closest('[data-simply-keyboard]')) {
+			return;
+		}
         if (keys[e.code]) {
             keys[e.code](e);
         }
     });
+
+    document.body.addEventListener('focusin', (e) => {
+        if (e.target) {
+            let entity = e.target.closest('.zett-entity');
+			if (entity) {
+	            app.commands.showEntity(entity);
+			}
+        }
+    });
+
 })();

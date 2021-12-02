@@ -9,6 +9,9 @@
     <link rel="shortcut icon" href="/favicon.ico">
     <link rel="stylesheet" href="/assets/css/styles.css">
     <style>
+    	body {
+    		background-attachment: fixed;
+    	}
         .ds-center-center {
             position: absolute;
             top:  50%;
@@ -24,80 +27,92 @@
             text-align:  center;
             color:  var(--ds-white);
         }
+        .zett-entity {
+        	padding: var(--ds-spacing);
+        	padding-bottom: 0;
+       	}
+       	.zett-entity:first-child {
+       		margin-top: 0;
+       	}
+       	.zett-entity:not(.zett-pre-entity) {
+       		position: relative;
+       		z-index: 11;
+       	}
+       	.zett-pane {
+       		background: white;
+       		border-radius: var(--ds-box-radius);
+       		margin:var(--ds-spacing);
+       		overflow: auto;
+       	}
+		.zett-pane:not(:last-child) {
+			border-right: none;
+		}
+       	.zett-pane-title {
+       		border-bottom: 1px solid var(--ds-grey-20);
+       		padding: 0.5em var(--ds-spacing);
+       	}
     </style>
     <title data-simply-field="meta title">Zett: A solid editor</title>
 </head>
 <body class="zett">
-    <main>
-        <section class="zett-worksheet">
-            <div class="zett-sidebar">
-                <nav>
-                    <header>New Worksheet</header>
-                    <ul>
-                        <li><a href="#newfile">New File</a></li>
-                    </ul>
-                    <footer>
-                        <button class="ds-button" data-simply-command="showAddFileDialog">Add File</button>
-                    </footer>
-                </nav>
-                <footer>
-                    <button class="ds-button" data-simply-command="addWorksheet">Add Worksheet</button>
-                </footer>
-            </div>
-            <div class="zett-panes">
-                <div class="zett-pane ds-space-inside" id="newfile">
-                    <label style="margin-bottom: 2.5em;" data-simply-field="worksheets.0.files.0.name">New File</label>
-                    <div class="zett-pane-data" data-simply-list="worksheets.0.files.0.data">
-                        <template>
-                            <div class="zett-pre-entity zett-entity ds-shadow-medium ds-space-inside ds-bg-white" data-simply-field="id" data-simply-content="attributes" data-simply-attributes="id">
-                                <button class="ds-button ds-button-naked zett-delete" data-simply-command="delete-entity">
-                                    <svg class="ds-icon ds-icon-feather">
-                                        <use xlink:href="/assets/icons/feather-sprite.svg#x"></use>
-                                    </svg>
-                                </button>
-                                <div class="zett-entry-type">
-                                    <div class="ds-badge">
-                                        <label>type</label>
-                                        <input class="zett-inline" type="text" value="tmo:Task" data-simply-field="type" list="zett-elements">
-                                    </div>
-                                    <div class="ds-badge ds-inline">
-                                        <label>id</label>
-                                        <input class="zett-inline" type="text" value="id" data-simply-field="id">
-                                    </div>
-                                </div>
-                                <div class="records" data-simply-list="records">
-                                    <template data-simply-template="default">
-                                        <div class="ds-form-group">
-                                            <input type="text" name="name" class="ds-narrow" value="" list="zett-terms" data-simply-field="name">
-                                            <input type="text" name="value" value="" data-simply-field="value">
+	<header>
+		<nav class="ds-tabs" data-simply-list="worksheets">
+			<template>
+				<a class="ds-tabs-tab zett-worksheet-title" data-simply-command="select-worksheet" data-simply-field="title">Worksheet</a>
+			</template>
+		</nav>
+	</header>
+    <main data-simply-list="worksheets">
+    	<template>
+	        <section class="zett-worksheet" data-simply-command="showAddFileDialog">
+				<div data-simply-list="files">
+	        	<template>
+                    <div class="zett-pane" id="x"
+                    	xdata-simply-field="url" data-simply-content="fixed" 
+                    	xdata-simply-transformer="urlToId" 
+                    	data-simply-command="selectFile"
+                    >
+                        <label class="zett-pane-title" data-simply-field="name">New File</label>
+                        <div class="zett-pane-data ds-space-inside" data-simply-list="data" data-simply-keyboard="default">
+                            <template>
+                                <div class="zett-pre-entity zett-entity ds-shadow-medium ds-bg-white" 
+                                	data-simply-field="id" data-simply-content="attributes" data-simply-attributes="id"
+                                	data-simply-command="showEntity"
+                                	>
+                                    <button class="ds-button ds-button-naked zett-delete" data-simply-command="delete-entity">
+                                        <svg class="ds-icon ds-icon-feather">
+                                            <use xlink:href="/assets/icons/feather-sprite.svg#x"></use>
+                                        </svg>
+                                    </button>
+                                    <div class="zett-entry-type">
+                                        <div class="ds-badge">
+                                            <label>type</label>
+                                            <input class="zett-inline" type="text" value="tmo:Task" data-simply-field="type" list="zett-elements">
                                         </div>
-                                    </template>
-                                    <template data-simply-template="blank">
-                                        todo
-                                    </template>
-                                </div>
-                                <form data-simply-command="addRecord">
-                                    <div class="ds-form-group">
-                                        <input type="text" class="ds-narrow" name="name" value="" list="zett-terms">
-                                        <input type="text" name="value" placeholder="Enter any data" value="">
-                                        <button type="submit" class="ds-button ds-button-primary zett-button">
-                                            <svg class="ds-icon ds-icon-feather">
-                                                <use xlink:href="/assets/icons/feather-sprite.svg#plus"></use>
-                                            </svg>
-                                        </button>
+                                        <div class="ds-badge ds-inline">
+                                            <label>id</label>
+                                            <input class="zett-inline" type="text" value="id" data-simply-field="id">
+                                        </div>
                                     </div>
-                                </form>
-                            </div>
-                        </template>
+                                    <div class="records" data-simply-list="records">
+                                        <template data-simply-template="default">
+                                            <div class="ds-form-group">
+                                                <input type="text" name="name" class="ds-narrow" value="" list="zett-terms" data-simply-field="name">
+                                                <input type="text" name="value" value="" data-simply-field="value">
+                                            </div>
+                                        </template>
+                                        <template data-simply-template="blank">
+                                            todo
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
                     </div>
-                    <button data-simply-command="addEntity" class="ds-space-vertical ds-button ds-button-primary zett-button">
-                        <svg class="ds-icon ds-icon-feather">
-                            <use xlink:href="/assets/icons/feather-sprite.svg#plus"></use>
-                        </svg>
-                    </button>
+                </template>
                 </div>
-            </div>
-        </section>
+            </section>
+        </template>
     </main>
 
     <dialog class="ds-dialog ds-center-center" id="addFileDialog">
