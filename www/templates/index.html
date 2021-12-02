@@ -43,6 +43,7 @@
        		border-radius: var(--ds-box-radius);
        		margin:var(--ds-spacing);
        		overflow: auto;
+       		flex-shrink: 0;
        	}
 		.zett-pane:not(:last-child) {
 			border-right: none;
@@ -50,6 +51,15 @@
        	.zett-pane-title {
        		border-bottom: 1px solid var(--ds-grey-20);
        		padding: 0.5em var(--ds-spacing);
+       	}
+       	.zett-canvas {
+       		display: flex;
+       	}
+       	.zett-entry-type {
+       		display: flex;
+       	}
+       	.ds-badge {
+       		display: flex;
        	}
     </style>
     <title data-simply-field="meta title">Zett: A solid editor</title>
@@ -65,12 +75,13 @@
     <main data-simply-list="worksheets">
     	<template>
 	        <section class="zett-worksheet" data-simply-command="showAddFileDialog">
-				<div data-simply-list="files">
+				<div class="zett-canvas" data-simply-list="files">
 	        	<template>
                     <div class="zett-pane" id="x"
                     	xdata-simply-field="url" data-simply-content="fixed" 
                     	xdata-simply-transformer="urlToId" 
                     	data-simply-command="selectFile"
+                    	data-simply-activate="draggable"
                     >
                         <label class="zett-pane-title" data-simply-field="name">New File</label>
                         <div class="zett-pane-data ds-space-inside" data-simply-list="data" data-simply-keyboard="default">
@@ -166,6 +177,7 @@
     </datalist>
 
     <script src="/assets/js/simplyview/simply.everything.js"></script>
+    <script src="https://unpkg.com/interactjs@1.10.11/dist/interact.min.js"></script>
     <script src="//canary.simplyedit.io/1/simply-edit.js" data-simply-storage="none"></script>
     <script src="/assets/js/app.js" type="module"></script>
 </body>

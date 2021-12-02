@@ -78,7 +78,9 @@ const app = simply.app({
 		'selectFile': (el, value) => {
 			let pane = el.closest('.zett-pane');
 			if (pane) {
-				let index = pane.d;
+				// bring pane to the front
+				// find which file index it is
+				// set app.view.file to that index	
 			}
 		}
     },
@@ -235,7 +237,8 @@ solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousS
     let selectionStart = 0;
 
     function focus(input, range=null) {
-        input.focus();        
+        input.focus();
+		input.scrollIntoView();        
         if (range) {
             input.setSelectionRange(range[0], range[1]);
         } else {
@@ -389,3 +392,37 @@ solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousS
     });
 
 })();
+
+interact('.zett-pane').draggable({
+	listeners: {
+		move (event) {
+			let position = {
+				x: parseInt(event.target.dataset.simplyPositionX || 0) + event.dx,
+				y: parseInt(event.target.dataset.simplyPositionY || 0) + event.dy
+			};
+			event.target.style.transform = `translate(${position.x}px, ${position.y}px`;
+			event.target.dataset.simplyPositionX = position.x;
+			event.target.dataset.simplyPositionY = position.y;
+		}
+	}
+});
+
+interact('.zett-pane').resizable({
+	edges: { right: true, bottom: true },
+	listeners: {
+		move (event) {
+			let position = {
+				x: parseInt(event.target.dataset.simplyPositionX || 0) + event.deltaRect.left,
+				y: parseInt(event.target.dataset.simplyPositionY || 0) + event.deltaRect.top
+			};
+
+	        Object.assign(event.target.style, {
+	            width: `${event.rect.width}px`,
+	            height: `${event.rect.height}px`,
+	            transform: `translate(${position.x}px, ${position.y}px)`
+	        });
+
+	        Object.assign(event.target.dataset, { x: position.x, y: position.y });
+		}
+	}
+});
