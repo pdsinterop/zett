@@ -1,13 +1,23 @@
-import { getDefaultSession } from 'https://cdn.skypack.dev/@inrupt/solid-client-authn-browser'
-import { Parser } from 'https://cdn.skypack.dev/n3'
+//import { getDefaultSession } from 'https://cdn.skypack.dev/pin/@inrupt/solid-client-authn-browser@v1.11.2-wX2J3i2GZ76es9PyIWrw/mode=imports,min/optimized/@inrupt/solid-client-authn-browser.js'
+//import { Parser } from 'https://cdn.skypack.dev/pin/n3@v1.12.0-JyCuQEtqH88WU0Kn0PZm/mode=imports,min/optimized/n3.js'
 
+const getDefaultSession = solidAuthn.getDefaultSession;
+const Parser = n3.Parser;
 
 const editor = window.editor;
-
+const fd     = window.FloatingUIDOM;
+const menu   = document.querySelector('#zett-menu');
+            
 const app = simply.app({
     routes: { 
     },
     commands: {
+        'showMenu': (el, value) => {
+            menu.style.display = 'block';
+        },
+        'hideMenu': (el, value) => {
+            menu.style.display = '';
+        },
         'addRecord': (el, values) => {
             app.view.worksheets[app.view.worksheet].files[app.view.file].data[app.view.entity].records.push({
                 name: values.name,
@@ -58,6 +68,10 @@ const app = simply.app({
             return app.actions.connect(values.issuer, values.url)
             .then(() => app.actions.addFile(values.url));
         },
+		'login-basic': (form, values) => {
+			document.getElementById('setIssuer').removeAttribute('open');
+			return app.actions.addFile(values.url, {username:values.username,password:values.password});
+		},
 		'showEntity': (el, value) => {
             var selectedCard = document.querySelector('.zett-entity:not(.zett-pre-entity)');
             if (el != selectedCard) {
@@ -85,8 +99,8 @@ const app = simply.app({
 		}
     },
     actions: {
-        addFile: url => {
-            return solidApi.fetch(url)
+        addFile: (url,loginInfo) => {
+            return solidApi.fetch(url, loginInfo)
             .then(data => mergeSubjects(data, url))
             .then(data => {
 				let worksheet = app.view.worksheet;
@@ -170,21 +184,41 @@ const solidSession = getDefaultSession();
 const prefixes = {};
 
 const solidApi = {
-    fetch: function(url) {
+    fetch: function(url, loginInfo) {
         const parser = new Parser({blankNodePrefix: '', baseIRI: url});
-        return solidSession.fetch(url)
+		var fetchParams = {
+			mode: 'cors',
+			headers: {
+				'Accept': 'application/*'
+			}
+		};
+		if (loginInfo && loginInfo.username && loginInfo.password) {
+			fetchParams.headers.Authorization = 'Basic '+btoa(loginInfo.username+':'+loginInfo.password);
+		}
+		return fetch(url, fetchParams)
+			.catch(error => {
+		        return solidSession.fetch(url)
+			})
             .then(response => {
                 if (response.ok) {
                     return response.text();
                 } else {
-                    throw new Error('not ok');
+					return solidSession.fetch(url).then(response => {
+						if (response.ok) {
+							return response.text();
+						} else {
+		                    throw new Error('Could not fetch resource: '+response.status+': '+response.statusText);
+						}
+					});
                 }
             })
-            .then(text => parser.parse(
-                text, 
-                null, 
-                (prefix, url) => { prefixes[prefix] = url.id }
-            ));
+            .then((text,error) => {
+				if (!error) {
+					return parser.parse(text, null, (prefix, url) => { prefixes[prefix] = url.id });
+				} else {
+					alert(error);
+				}
+			});
     },
     connect: function(issuer, resourceUrl) {
         if (solidSession.info && solidSession.info.isLoggedIn === false) {
@@ -416,9 +450,12 @@ interact('.zett-pane').resizable({
 				y: parseInt(event.target.dataset.simplyPositionY || 0) + event.deltaRect.top
 			};
 
+			let width = Math.max(120, event.rect.width);
+			let height = Math.max(120, event.rect.height);
+
 	        Object.assign(event.target.style, {
-	            width: `${event.rect.width}px`,
-	            height: `${event.rect.height}px`,
+	            width: `${width}px`,
+	            height: `${height}px`,
 	            transform: `translate(${position.x}px, ${position.y}px)`
 	        });
 
@@ -426,3 +463,4 @@ interact('.zett-pane').resizable({
 		}
 	}
 });
+

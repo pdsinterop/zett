@@ -6,9 +6,24 @@
     <meta name="description" data-simply-field="meta description" content="">
     <meta name="author" data-simply-field="meta author"content="simplyedit">
     <meta name="robots" data-simply-field="meta robots" content="index, follow">
-    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="shortcut icon" href="/assets/img/zett-logo.ico">
     <link rel="stylesheet" href="/assets/css/styles.css">
     <style>
+        :root {
+            --ds-primary: #F2E205;
+            --ds-primary-dark: #BFB304;
+            --ds-primary-contrast: var(--ds-black);
+            --ds-primary-light: #EAF205;
+            --ds-primary-gradient: linear-gradient( to left, var(--ds-primary-light), var(--ds-primary-dark) );
+            --ds-support: #7F25D9;
+            --ds-support-dark: #5C12A6;
+            --ds-support-light: #A240FC;
+            --ds-support-contrast: #FFF;
+            --ds-support-gradient: linear-gradient( to left, var(--ds-support-light), var(--ds-support-dark) );
+        }
+        .ds-no-margin {
+            margin: 0;
+        }
     	body {
     		background-attachment: fixed;
     	}
@@ -44,6 +59,7 @@
        		margin:var(--ds-spacing);
        		overflow: auto;
        		flex-shrink: 0;
+            box-shadow: var(--ds-shadow-medium);
        	}
 		.zett-pane:not(:last-child) {
 			border-right: none;
@@ -61,20 +77,84 @@
        	.ds-badge {
        		display: flex;
        	}
+        .zett-menu {
+            position: absolute;
+            z-index: 10000;
+            width: 250px;
+            right: var(--ds-spacing);
+            top: calc(var(--ds-spacing) + 60px);
+            background: var(--ds-white);
+            color: var(--ds-black);
+            padding: var(--ds-spacing-x05);
+            border-radius: var(--ds-box-radius);
+            display: none;
+            box-shadow: var(--ds-shadow-medium);
+        }
+        .zett-menu-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .zett-menu-item {
+            margin: 0;
+            padding: 0;
+        }
+        .zett-logo {
+            position: fixed;
+            top: var(--ds-spacing);
+            right: var(--ds-spacing);
+            z-index: 10000;
+            height: 60px;
+            transform: scale(1, -1) translate(0, -322)
+        }
+        .zett-dialog-header {
+            padding: var(--ds-spacing-x05) var(--ds-spacing);
+            padding-bottom: 0;
+        }
+        .zett-dialog-heading {
+        	margin-bottom: 0;
+       	}
+       	.zett-dialog-tabs {
+       		position: absolute;
+       		top: 38px;
+       		right: var(--ds-spacing);
+       	}
+       	.zett-tab-content {
+       		display: none;
+       	}
+       	.zett-tab-content.simply-selected {
+       		display: block;
+       	}
+       	.zett-dialog-tabs .simply-selected {
+            border: 1px solid var(--ds-tabs-border-color);
+            border-bottom: 0;
+            position: relative;
+            top: 1px;
+            line-height: calc(var(--ds-tabs-line-height) - 1px);
+            background: var(--ds-tabs-bg-color);
+       	}
     </style>
     <title data-simply-field="meta title">Zett: A solid editor</title>
 </head>
-<body class="zett">
+<body class="zett" data-simply-command="hideMenu">
 	<header>
 		<nav class="ds-tabs" data-simply-list="worksheets">
 			<template>
 				<a class="ds-tabs-tab zett-worksheet-title" data-simply-command="select-worksheet" data-simply-field="title">Worksheet</a>
 			</template>
 		</nav>
+        <img class="zett-logo" src="/assets/img/zett-logo.svg" alt="Zett: a solid editor" id="zett" data-simply-command="showMenu">
+        <nav class="zett-menu" id="zett-menu">
+            <ul class="zett-menu-list">
+                <li class="zett-menu-item"><a data-simply-command="showAddFileDialog">Add Resource</a></li>
+                <li class="zett-menu-item"><a data-simply-command="addNewFile">Create New Resource</a></li>
+                <li class="zett-menu-item"><a data-simply-command="about">About Zett</a></li>
+            </ul>
+        </nav>
 	</header>
     <main data-simply-list="worksheets">
     	<template>
-	        <section class="zett-worksheet" data-simply-command="showAddFileDialog">
+	        <section class="zett-worksheet">
 				<div class="zett-canvas" data-simply-list="files">
 	        	<template>
                     <div class="zett-pane" id="x"
@@ -132,8 +212,8 @@
                 <use xlink:href="/assets/icons/feather-sprite.svg#x-circle">
             </use></svg>
         </button>
-        <div class="ds-dialog-header ds-bg-support">
-            <h2 class="ds-space-horizontal">Add a resource to your worksheet</h2>
+        <div class="ds-dialog-header ds-bg-primary zett-dialog-header">
+            <h2 class="ds-no-margin">Add a resource to your worksheet</h2>
         </div>
         <div class="ds-dialog-content">
             <form class="ds-space ds-margin-up" data-simply-command="addFile">
@@ -150,13 +230,29 @@
                 <use xlink:href="/assets/icons/feather-sprite.svg#x-circle">
             </use></svg>
         </button>
-        <div class="ds-dialog-header ds-bg-support">
-            <h2 class="ds-space-horizontal">Enter your WebID</h2>
+        <div class="ds-dialog-header ds-bg-primary">
+            <h2 class="zett-dialog-heading ds-space-horizontal">Login</h2>
+            <div class="zett-dialog-tabs ds-tabs ds-tabs-border">
+            	<a class="ds-tabs-tab simply-selected" data-simply-command="simply-select" data-simply-value="solid-auth-form" data-simply-group="login-tabs">Solid</a>
+            	<a class="ds-tabs-tab" data-simply-command="simply-select" data-simply-value="basic-auth-form" data-simply-group="login-tabs">Basic</a>
+            </div>
         </div>
-        <div class="ds-dialog-content">
+        <div class="ds-dialog-content zett-tab-content simply-selected" id="solid-auth-form" data-simply-group="login">
             <form class="ds-space ds-margin-up" data-simply-command="login">
                 <label>Solid WebID:
                     <input type="url" name="issuer">
+                </label>
+                <input type="hidden" name="url" value="" data-simply-field="fetchUrl">
+                <button class="ds-button ds-button-primary" type="submit">Login</button>
+            </form>
+        </div>
+        <div class="ds-dialog-content zett-tab-content" id="basic-auth-form" data-simply-group="login">
+			<form class="ds-space ds-margin-up" data-simply-command="login-basic">
+                <label>Username:
+                    <input type="text" name="username">
+                </label>
+                <label>Password:
+                    <input type="password" name="password">
                 </label>
                 <input type="hidden" name="url" value="" data-simply-field="fetchUrl">
                 <button class="ds-button ds-button-primary" type="submit">Login</button>
@@ -178,7 +274,10 @@
 
     <script src="/assets/js/simplyview/simply.everything.js"></script>
     <script src="https://unpkg.com/interactjs@1.10.11/dist/interact.min.js"></script>
+    <script src="https://unpkg.com/@floating-ui/core@0"></script>
+    <script src="https://unpkg.com/@floating-ui/dom@0"></script>
     <script src="//canary.simplyedit.io/1/simply-edit.js" data-simply-storage="none"></script>
+    <script src="/assets/js/bundle.js"></script>
     <script src="/assets/js/app.js" type="module"></script>
 </body>
 </html>
