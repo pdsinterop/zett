@@ -63,6 +63,11 @@ const app = simply.app({
                 document.getElementById('setIssuer').setAttribute('open','open');
             })
         },
+		'addNewFile': () => {
+			app.actions.addNewFile().then(() => {
+				//
+			});
+		},
         'login': (form, values) => {
             document.getElementById('setIssuer').removeAttribute('open');
             return app.actions.connect(values.issuer, values.url)
@@ -75,8 +80,10 @@ const app = simply.app({
 		'showEntity': (el, value) => {
             var selectedCard = document.querySelector('.zett-entity:not(.zett-pre-entity)');
             if (el != selectedCard) {
-                selectedCard.classList.add('zett-pre-entity');
-                selectedCard.scrollTo(0,0);
+				if (selectedCard) {
+	                selectedCard.classList.add('zett-pre-entity');
+    	            selectedCard.scrollTo(0,0);
+				}
                 el.classList.remove('zett-pre-entity');
 				let firstInputValue = el.querySelector('input[name="value"]');
 				if (!firstInputValue) {
@@ -99,6 +106,21 @@ const app = simply.app({
 		}
     },
     actions: {
+		addNewFile: () => {
+			let worksheet = app.view.worksheet;
+			if (!worksheet) {
+				worksheet = 0;
+				app.view.worksheet = 0;
+			}
+			if (!app.view.worksheets[worksheet]) {
+				app.view.worksheets[worksheet] = { name: 'new worksheet', files: [] };
+			}
+			app.view.worksheets[worksheet].files.push( { name: 'new-resource.ttl', url:'#', data:[]});
+			app.view.file = app.view.worksheets[worksheet].files.length - 1;
+			return new Promise((resolve, reject) => {
+				resolve([]);
+			});
+		},
         addFile: (url,loginInfo) => {
             return solidApi.fetch(url, loginInfo)
             .then(data => mergeSubjects(data, url))
@@ -111,7 +133,7 @@ const app = simply.app({
 				if (!app.view.worksheets[worksheet]) {
 					app.view.worksheets[worksheet] = { name: 'new worksheet', files: [] };
 				}
-                app.view.worksheets[worksheet].files.push( { name: url.split('/').pop(), url, data} );
+                app.view.worksheets[worksheet].files.push( { name: url.split('/').pop(), url:url, data:data} );
 				app.view.file = app.view.worksheets[worksheet].files.length - 1;
                 return data;
             });
@@ -138,44 +160,96 @@ const app = simply.app({
 
 function mergeSubjects(data, baseUrl) {
     var subjects = {};
+	var blankNodes = {};
     data.forEach(rule => {
         let subject = rule.subject.value;
         let predicate = rule.predicate.value;
         let object = rule.object.value;
-        if (object.startsWith(baseUrl)) {
-            object = object.substring(baseUrl.length);
-        }
-        if (!subjects[subject]){
-            let id = applyPrefix(subject);
-            if (subject.startsWith(baseUrl)) {
-                id = subject.substring(baseUrl.length);
-            }
-            subjects[subject] = {
-                id: id,
-                type: '',
-                records: []
-            };
-        }
-        if (predicate == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
-            subjects[subject].type = object;
-        } else {
-            predicate = applyPrefix(predicate);
-            object = applyPrefix(object);
-            subjects[subject].records.push({
-                name: predicate,
-                value: object
-            });
-        }
+		switch(rule.object.termType) {
+			case 'BlankNode':
+				if (!blankNodes[rule.object.value]) {
+					object = [];
+					blankNodes[rule.object.value] = object;
+				} else {
+					object = blankNodes[rule.object.value];
+				}
+		        if (!subjects[subject]){
+		            let id = applyPrefix(subject);
+		            if (subject.startsWith(baseUrl)) {
+		                id = subject.substring(baseUrl.length);
+		            }
+		            subjects[subject] = {
+		                id: id,
+		                type: '',
+		                records: []
+		            };
+		        }
+	            predicate = applyPrefix(predicate);
+	            subjects[subject].records.push({
+					'data-simply-template': rule.object.termType,
+	                name: predicate,
+	                value: object
+	            });
+			break;
+			case 'NamedNode':
+		        if (typeof object=='string') {
+					if (object.startsWith(baseUrl)) {
+			            object = object.substring(baseUrl.length);
+			        } else {
+						object = applyPrefix(object);
+					}
+				}
+				if (rule.subject.id.substring(0,2)=='_:') {
+					predicate = applyPrefix(predicate);
+					let blankNodeID = rule.subject.id.substring(2);
+					if (!blankNodes[blankNodeID]) {
+						blankNodes[blankNodeID] = [];
+					}
+					blankNodes[blankNodeID].push({
+						'data-simply-template': rule.object.termType,
+						name: predicate,
+						value: object
+					});
+					break;
+				}
+			//FALLTHROUGH
+			case 'Literal':
+		        if (!subjects[subject]){
+		            let id = applyPrefix(subject);
+		            if (subject.startsWith(baseUrl)) {
+		                id = subject.substring(baseUrl.length);
+		            }
+		            subjects[subject] = {
+		                id: id,
+		                type: '',
+		                records: []
+		            };
+		        }
+		        if (predicate == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type') {
+		            subjects[subject].type = object;
+		        } else {
+		            predicate = applyPrefix(predicate);
+		            object = applyPrefix(object);
+		            subjects[subject].records.push({
+						'data-simply-template': rule.object.termType,
+		                name: predicate,
+		                value: object
+		            });
+		        }
+			break;
+		}
     });
     return Object.values(subjects);
 }
 
 function applyPrefix(url) {
-    for (const [prefix, purl] of Object.entries(prefixes)) {
-        if (url.startsWith(purl)) {
-            return prefix+':'+url.substring(purl.length);
-        }
-    }
+	if (typeof url == 'string') {
+	    for (const [prefix, purl] of Object.entries(prefixes)) {
+	        if (url.startsWith(purl)) {
+	            return prefix+':'+url.substring(purl.length);
+	        }
+	    }
+	}
     return url;
 }
 
