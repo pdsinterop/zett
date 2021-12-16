@@ -502,6 +502,7 @@ solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousS
 })();
 
 interact('.zett-pane').draggable({
+	allowFrom: '.zett-drag-handle',
 	listeners: {
 		move (event) {
 			let position = {
@@ -536,5 +537,19 @@ interact('.zett-pane').resizable({
 	        Object.assign(event.target.dataset, { x: position.x, y: position.y });
 		}
 	}
+});
+
+var zettDrag = dragula([], {
+
+});
+zettDrag.on('drag',(el,source) => {
+	editor.fireEvent('databinding:pause', source);
+});
+zettDrag.on('dragend',(el) => {
+	let source = el.closest('[data-simply-activate="dragula"]');
+	editor.fireEvent('databinding:resume', source);
+});
+simply.activate.addListener('dragula', function() {
+	zettDrag.containers.push(this);
 });
 

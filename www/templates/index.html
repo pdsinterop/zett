@@ -7,6 +7,7 @@
     <meta name="author" data-simply-field="meta author"content="simplyedit">
     <meta name="robots" data-simply-field="meta robots" content="index, follow">
     <link rel="shortcut icon" href="/assets/img/zett-logo.ico">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.css" integrity="sha512-gGkweS4I+MDqo1tLZtHl3Nu3PGY7TU8ldedRnu60fY6etWjQ/twRHRG2J92oDj7GDU2XvX8k6G5mbp0yCoyXCA==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="/assets/css/styles.css">
     <style>
         :root {
@@ -133,6 +134,12 @@
             line-height: calc(var(--ds-tabs-line-height) - 1px);
             background: var(--ds-tabs-bg-color);
        	}
+       	.zett-drag-handle {
+       		cursor: move;
+       		cursor: grab;
+       		cursor: -moz-grab;
+       		cursor: -webkit-grab;
+       	}
     </style>
     <title data-simply-field="meta title">Zett: A solid editor</title>
 </head>
@@ -163,8 +170,8 @@
                     	data-simply-command="selectFile"
                     	data-simply-activate="draggable"
                     >
-                        <label class="zett-pane-title" data-simply-field="name">New File</label>
-                        <div class="zett-pane-data ds-space-inside" data-simply-list="data" data-simply-keyboard="default">
+                        <label class="zett-drag-handle zett-pane-title" data-simply-field="name">New File</label>
+                        <div class="zett-pane-data ds-space-inside" data-simply-activate="dragula" data-simply-list="data" data-simply-keyboard="default">
                             <template>
                                 <div class="zett-pre-entity zett-entity ds-shadow-medium ds-bg-white" 
                                 	data-simply-field="id" data-simply-content="attributes" data-simply-attributes="id"
@@ -288,6 +295,7 @@
     <script src="https://unpkg.com/interactjs@1.10.11/dist/interact.min.js"></script>
     <script src="https://unpkg.com/@floating-ui/core@0"></script>
     <script src="https://unpkg.com/@floating-ui/dom@0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dragula/3.7.3/dragula.min.js"></script>
     <script src="//canary.simplyedit.io/1/simply-edit.js" data-simply-storage="none"></script>
     <script src="/assets/js/bundle.js"></script>
     <script src="/assets/js/app.js" type="module"></script>
