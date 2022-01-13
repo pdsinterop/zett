@@ -153,7 +153,9 @@ const app = simply.app({
         },
         'undeleteEntity': (el, value) => {
             app.actions.undeleteEntity(el).then(() => {
-                el.closest('.zett-entity').classList.remove('zett-hidden');
+                if (el && el.closest('.zett-entity')) {
+                    el.closest('.zett-entity').classList.remove('zett-hidden');
+                }
             });
         }
     },
@@ -239,8 +241,8 @@ const app = simply.app({
             var item = el.closest('.zett-entity').dataBinding.config.data;
             var file = el.closest('.zett-pane').dataBinding.config.data;
             if (item.hidden) {
-                var index = item.records.filter(r => {
-                    return r.name==='lm:deleted';
+                var index = item.records.findIndex(r => {
+                    return r.name==='lm:deleted' || r.name=='lm:redirectPermanent'
                 });
                 if (index!==false) {
                     item.records.splice(index, 1);
@@ -357,6 +359,16 @@ const app = simply.app({
                     if (!oldFile.prefixes['lm']) {
                         oldFile.prefixes['lm'] = 'https://purl.org/pdsinterop/link-metadata#'
                     }
+                    var oldItem = JSON.parse(JSON.stringify(item));
+                    oldItem.records.push({
+                        'data-simply-template': 'NamedNode',
+                        'name': 'lm:redirectPermanent',
+                        'url': file.url+item.id,
+                        'value': file.url+item.id
+                    });
+                    oldItem.hidden = true;
+                    oldParent.push(oldItem);
+                    /*
                     oldParent.push({
                         id: item.id,
                         records: [{
@@ -367,6 +379,7 @@ const app = simply.app({
                         }],
                         hidden: true
                     });
+                    */
                 }
                 var prefixes = getPrefixes(item, oldFile.prefixes);
                 Object.entries(prefixes).forEach(prefix => {
