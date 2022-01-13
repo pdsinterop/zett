@@ -712,6 +712,67 @@ select[multiple] {
     background-color: var(--ds-info-color);
 }
 
+/* Components:  Dropdown */
+:root {
+    --ds-dropdown-background: white;
+    --ds-dropdown-width: 200px;
+}
+.ds-dropdown {
+    margin: 0;
+    padding: 0;
+    outline: none;
+    box-shadow: none;
+    display: inline;
+    position: relative;
+}
+.ds-dropdown-icon {
+    padding: 0 0.25em;
+    width: 1.5em;
+    border-radius: 2px;
+}
+.ds-dropdown-icon:hover {
+    background: var(--ds-grey-40);
+}
+.ds-dropdown-nav {
+    width: var(--ds-dropdown-width);
+    background: var(--ds-dropdown-background);
+    display: none;
+    position: absolute;
+    left: 0;
+    box-shadow: var(--ds-shadow-medium);
+    border-radius: var(--ds-box-radius);
+    z-index: 101;
+}
+.ds-dropdown-nav::before {
+    content: "";
+    display: block;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: var(--ds-dropdown-background);
+    position: absolute;
+    top: -0.2rem;
+    left: 0.75rem;
+    transform: rotate(45deg);
+    filter: drop-shadow(-1px -1px 2px #DDD);
+    clip-path: polygon(-2px 0.6rem, -2px -2px, 0.6rem -2px);
+}
+.ds-dropdown-state {
+    display: none;
+}
+.ds-dropdown-state:checked ~ .ds-dropdown-nav {
+    display: block;
+}
+.ds-dropdown-list {
+    list-style: none;
+    margin: 0;
+    padding: calc(0.25 * var(--ds-spacing)) calc(0.5 * var(--ds-spacing));
+}
+.ds-dropdown-item {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
 /* Components: Badge */
 
 .ds-badge {

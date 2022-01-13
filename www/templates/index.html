@@ -47,7 +47,8 @@
         	padding: var(--ds-spacing);
         	padding-bottom: 0;
        	}
-       	.zett-entity:first-child {
+        .zett-entity.zett-hidden:first-child,
+        .zett-entity:first-child {
        		margin-top: 0;
        	}
        	.zett-entity:not(.zett-pre-entity) {
@@ -55,22 +56,26 @@
        		z-index: 11;
        	}
        	.zett-pane {
+            position: absolute;
+            top: var(--ds-spacing);
+            left: var(--ds-spacing);
        		background: white;
        		border-radius: var(--ds-box-radius);
        		margin:var(--ds-spacing);
        		overflow: auto;
        		flex-shrink: 0;
             box-shadow: var(--ds-shadow-medium);
+            min-width: 200px;
+            min-height:  100px;
        	}
 		.zett-pane:not(:last-child) {
 			border-right: none;
 		}
        	.zett-pane-title {
        		border-bottom: 1px solid var(--ds-grey-20);
-       		padding: 0.5em var(--ds-spacing);
+       		padding: 0.5em 0 0.5em var(--ds-spacing);
        	}
        	.zett-canvas {
-       		display: flex;
        	}
        	.zett-entry-type {
        		display: flex;
@@ -79,7 +84,7 @@
        		display: flex;
        	}
         .zett-menu {
-            position: absolute;
+            position: fixed;
             z-index: 10000;
             width: 250px;
             right: var(--ds-spacing);
@@ -140,10 +145,69 @@
        		cursor: -moz-grab;
        		cursor: -webkit-grab;
        	}
+        .zett-link {
+            margin-right: 0;
+        }
+        .ds-form-group {
+            gap:  calc(0.5 * var(--ds-input-spacing));
+        }
+        .ds-dropdown-right {
+            left:  auto;
+            right:  0;
+        }
+        .ds-dropdown-right::before {
+            left:  auto;
+            right: 0.5rem;
+            top:  -0.15rem;
+        }
+        .zett-undelete {
+            margin: 0;
+            position: absolute;
+            top: 0;
+            right: 0;
+            box-shadow: none;
+        }
+        .zett-close .ds-icon,
+        .zett-delete .ds-icon ,
+        .zett-undelete .ds-icon {
+            height:  1em;
+            vertical-align: unset;
+        }
+        :root .zett-close,
+        :root .zett-delete,
+        :root .zett-undelete {
+            box-sizing: border-box;
+            padding:  0.1em;
+            height:  1.4em;
+            width: 1.4em;
+            min-height: auto;
+            line-height: unset;
+        }
+        .zett-hidden, .zett-undelete {
+            display:  none;
+        }
+        .zett-entity.zett-hidden .zett-delete {
+            display:  none;
+        }
+        .zett-entity.zett-hidden .zett-undelete {
+            display:  block;
+        }
+        .zett-show-deleted .zett-entity.zett-hidden {
+            display: block;
+        }
+        .zett-show-deleted .zett-entity:not(.zett-hidden) {
+            display:  none;
+        }
+        .ds-dialog {
+            z-index:  1002;
+        }
+        .ds-dialog-overlay {
+            z-index:  1001;
+        }
     </style>
     <title data-simply-field="meta title">Zett: A solid editor</title>
 </head>
-<body class="zett" data-simply-command="hideMenu">
+<body class="zett">
 	<header>
 		<nav class="ds-tabs" data-simply-list="worksheets">
 			<template>
@@ -158,6 +222,25 @@
                 <li class="zett-menu-item"><a data-simply-command="about">About Zett</a></li>
             </ul>
         </nav>
+        <div class="zett-alerts">
+            <ul class="ds-toasts ds-space" data-simply-list="alerts">
+                <template data-simply-template="error">
+                    <li class="ds-toast ds-toast-error ds-toast-autohide" data-simply-field="state" data-simply-content="attributes" data-simply-attributes="data-state">
+                        <div class="ds-space" data-simply-field="message"></div>
+                    </li>
+                </template>
+                <template data-simply-template="warning">
+                    <li class="ds-toast ds-toast-warning ds-toast-autohide" data-simply-field="state" data-simply-content="attributes" data-simply-attributes="data-state">
+                        <div class="ds-space" data-simply-field="message"></div>
+                    </li>
+                </template>
+                <template data-simply-template="info">
+                    <li class="ds-toast ds-toast-info ds-toast-autohide" data-simply-field="state" data-simply-content="attributes" data-simply-attributes="data-state">
+                        <div class="ds-space" data-simply-field="message"></div>
+                    </li>
+                </template>
+            </ul>
+        </div>
 	</header>
     <main data-simply-list="worksheets">
     	<template>
@@ -165,21 +248,46 @@
 				<div class="zett-canvas" data-simply-list="files">
 	        	<template>
                     <div class="zett-pane" id="x"
-                    	xdata-simply-field="url" data-simply-content="fixed" 
-                    	xdata-simply-transformer="urlToId" 
-                    	data-simply-command="selectFile"
+                    	data-simply-field="position" data-simply-content="fixed" 
+                    	data-simply-transformer="position" 
                     	data-simply-activate="draggable"
                     >
-                        <label class="zett-drag-handle zett-pane-title" data-simply-field="name">New File</label>
-                        <div class="zett-pane-data ds-space-inside" data-simply-activate="dragula" data-simply-list="data" data-simply-keyboard="default">
+                        <header class="zett-pane-title">
+                            <div class="ds-align-right">
+                                <button class="ds-button ds-button-naked zett-close" data-simply-command="closeFile"><svg class="ds-icon ds-icon-feather">
+                                    <use xlink:href="/assets/icons/feather-sprite.svg#x"></use>
+                                </svg></button>
+                            </div>
+                            <label class="ds-align-right ds-dropdown" data-simply-command="showFileMenu">
+                                <svg class="ds-dropdown-icon ds-icon ds-icon-feather">
+                                    <use xlink:href="/assets/icons/feather-sprite.svg#chevron-down"></use>
+                                </svg>
+                                <input type="checkbox" class="ds-dropdown-state">
+                                <nav class="ds-dropdown-nav ds-dropdown-right">
+                                    <ul class="ds-dropdown-list">
+                                        <li class="ds-dropdown-item" data-simply-command="saveFile">Save</li>
+                                        <li class="ds-dropdown-item" data-simply-command="deleteFile">Delete</li>
+                                        <li class="ds-dropdown-item" data-simply-command="showDeleted">Show Deleted &amp; Redirected</li>
+                                    </ul>
+                                </nav>
+                            </label>
+                            <label class="zett-drag-handle" data-simply-field="name">New File</label>
+                        </header>
+                        <div class="zett-pane-data ds-space-inside" data-simply-activate="drag-cards" data-simply-list="data" data-simply-keyboard="default">
                             <template>
                                 <div class="zett-pre-entity zett-entity ds-shadow-medium ds-bg-white" 
                                 	data-simply-field="id" data-simply-content="attributes" data-simply-attributes="id"
-                                	data-simply-command="showEntity"
+                                    data-simply-command="showEntity"
                                 	>
-                                    <button class="ds-button ds-button-naked zett-delete" data-simply-command="delete-entity">
+                                    <input class="zett-hidden" type="checkbox" name="hidden" value="1" data-simply-field="hidden" data-simply-transformer="hideHidden">
+                                    <button class="ds-button ds-button-naked zett-delete" data-simply-command="deleteEntity">
                                         <svg class="ds-icon ds-icon-feather">
                                             <use xlink:href="/assets/icons/feather-sprite.svg#x"></use>
+                                        </svg>
+                                    </button>
+                                    <button class="ds-button ds-button-naked zett-undelete" data-simply-command="undeleteEntity">
+                                        <svg class="ds-icon ds-icon-feather">
+                                            <use xlink:href="/assets/icons/feather-sprite.svg#corner-up-left"></use>
                                         </svg>
                                     </button>
                                     <div class="zett-entry-type">
@@ -194,13 +302,28 @@
                                     </div>
                                     <div class="records" data-simply-list="records">
                                         <template data-simply-template="default">
-                                            <div class="ds-form-group">
+                                            <div class="ds-form-group zett-default">
+                                                <input type="text" name="name" class="ds-narrow" value="" list="zett-terms" data-simply-field="name">
+                                                <input type="text" name="value" value="" data-simply-field="value">
+                                            </div>
+                                        </template>
+                                        <template data-simply-template="NamedNode">
+                                            <div class="ds-form-group zett-namednode">
+                                                <input type="text" name="name" class="ds-narrow" value="" list="zett-terms" data-simply-field="name">
+                                                <input type="text" name="value" value="" data-simply-field="value">
+                                                <a class="ds-button zett-link" data-simply-field="url" data-simply-content="fixed"><svg class="ds-icon ds-icon-feather">
+                                                    <use xlink:href="/assets/icons/feather-sprite.svg#arrow-right"></use>
+                                                </svg></a>
+                                            </div>
+                                        </template>
+                                        <template data-simply-template="Literal">
+                                            <div class="ds-form-group zett-literal">
                                                 <input type="text" name="name" class="ds-narrow" value="" list="zett-terms" data-simply-field="name">
                                                 <input type="text" name="value" value="" data-simply-field="value">
                                             </div>
                                         </template>
                                         <template data-simply-template="BlankNode">
-                                            <div class="ds-form-group">
+                                            <div class="ds-form-group zett-blanknode">
                                             	<input type="text" name="name" class="ds-narrow" value="" list="zett-terms" data-simply-field="name">
                                             	<div class="zett-blank-nodes">
                                             		<div class="zett-blank-nodes-content" data-simply-list="value">
