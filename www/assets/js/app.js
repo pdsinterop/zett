@@ -12,6 +12,38 @@ const app = simply.app({
     routes: { 
     },
     commands: {
+        'openlink': (el, value) => {
+            function getOffset(el) {
+                const rect = el.getBoundingClientRect();
+                return {
+                    left: rect.left + window.scrollX,
+                    top: rect.top + window.scrollY - 51
+                };
+            }
+            var buttonPos = getOffset(el);
+            app.actions.openlink(el.href)
+            .then(file => {
+                if (!file) {
+                    return;
+                }
+                app.view.worksheets[0].files[app.view.file].position = {
+                    x: buttonPos.left,
+                    y: buttonPos.top
+                };
+            })
+            .catch(error => {
+                var message = '';
+                if (error.status) {
+                    message += error.status+' ';
+                }
+                if (error.message) {
+                    message += error.message;
+                } else {
+                    message += error;
+                }
+                alert(message);
+            });
+        },
         'showMenu': (el, value) => {
             menu.style.display = 'block';
             document.body.addEventListener('click', function() {
@@ -87,8 +119,17 @@ const app = simply.app({
 			return app.actions.addFile(values.url, {username:values.username,password:values.password});
 		},
 		'showEntity': (el, value) => {
-            var file = el.closest('.zett-pane');
-            var selectedCard = file.querySelector('.zett-entity:not(.zett-pre-entity)');
+            function getPathIndex(path) {
+                var pathnames = path.split('/').filter(Boolean);
+                var index = pathnames.pop();
+                if (!isNaN(index)) {
+                    return parseInt(index);
+                } else {
+                    return 0;
+                }
+            }
+            var pane = el.closest('.zett-pane');
+            var selectedCard = pane.querySelector('.zett-entity:not(.zett-pre-entity)');
             if (el != selectedCard) {
 				if (selectedCard) {
 	                selectedCard.classList.add('zett-pre-entity');
@@ -96,15 +137,18 @@ const app = simply.app({
 				}
                 el.classList.remove('zett-pre-entity');
 				let firstInputValue = el.querySelector('input[name="value"]');
-				if (!firstInputValue) {
-					return;
-				}
-				let activeElement = document.activeElement;
-				if (!activeElement || document.activeElement.tagName!='INPUT') {
-					firstInputValue.focus();
-					return;
-				}
+				if (firstInputValue) {				
+    				let activeElement = document.activeElement;
+    				if (!activeElement || document.activeElement.tagName!='INPUT') {
+    					firstInputValue.focus();
+    				}
+                }
+                selectedCard = el;
             }
+            var file = pane.dataBinding.config.data;
+            var cardNumber = getPathIndex(selectedCard.dataBinding.config.parentKey);
+            file.selectedIndex = cardNumber;
+            console.log('selected card number '+cardNumber);
 		},
 		'selectFile': (el, value) => {
 			let pane = el.closest('.zett-pane');
@@ -188,13 +232,101 @@ const app = simply.app({
             });
 			app.view.file = app.view.worksheets[worksheet].files.length - 1;
 			return new Promise((resolve, reject) => {
-				resolve([]);
+				resolve(app.view.file);
 			});
 		},
-        addFile: (url,loginInfo) => {
-            return solidApi.fetch(url, loginInfo)
+        openlink: (url,loginInfo) => {
+
+            try {
+                var urlOb = new URL(url);
+            } catch(e) {
+                throw e;
+            }
+            var isFileAdded = false;
+            return app.actions.addFile(url, loginInfo)
             .then(result => {
-                result.data = mergeSubjects(result.data, url, result.prefixes);
+                isFileAdded = true;
+                if (urlOb.hash) {
+                    // only show the matching data
+                    let file = app.view.worksheets[app.view.worksheet].files[app.view.file];
+                    file.data = file.data.filter(card => {
+                        return card.id == urlOb.hash
+                    });
+                    if (!file.data.length) {
+                        throw { status: 404, message: 'Object not found'};
+                    }
+                    // check that the record doesn't contain a delete/forget/redirect statement
+                    var lmPredicate = null;
+                    var lmRecord = null;
+                    file.data.forEach(card => {
+                        card.records.forEach(record => {
+                            var predicate = dereferencePrefixes(record.name, file.prefixes);
+                            if (predicate && predicate.startsWith('https://purl.org/pdsinterop/link-metadata#')) {
+                                lmRecord = record;
+                                lmPredicate = predicate;
+                            }
+                        });
+                    });
+                    if (lmPredicate) {
+                        app.view.worksheets[app.view.worksheet].files.splice(app.view.file,1); // remove file with redirected/deleted info
+                        switch(lmPredicate) {
+                            case 'https://purl.org/pdsinterop/link-metadata#deleted':
+                                throw { status: 404, message: 'Object not found'};
+                            break;
+                            case 'https://purl.org/pdsinterop/link-metadata#forget':
+                                throw { status: 410, message: 'Object forgotten'};
+                            break;
+                            case 'https://purl.org/pdsinterop/link-metadata#redirectPermanent':
+                            case 'https://purl.org/pdsinterop/link-metadata#redirectTemporary':
+                                return app.actions.openlink(lmRecord.url, loginInfo);
+                            break;
+                        }
+                    }
+                }
+                return result;
+            })
+            .catch(error => {
+                // TODO: if cors error => show iframe
+                var message = '';
+                if (error.status) {
+                    message += error.status+' ';
+                }
+                if (error.message) {
+                    message += error.message;
+                } else {
+                    message += error;
+                }
+                alert(message);
+                console.error(error);
+                if (isFileAdded) {
+                    // remove it
+                    app.view.worksheets[app.view.worksheet].files.splice(app.view.file, 1);
+                }
+            });
+        },
+        addFile: (url,loginInfo) => {
+            var cleanUrl = new URL(url);
+            cleanUrl.hash = '';
+            cleanUrl = cleanUrl.href;
+            return solidApi.fetch(cleanUrl, loginInfo)
+            .then(result => {
+                result.data = mergeSubjects(result.data, cleanUrl, result.prefixes);
+                var hidePredicates = [
+                    'https://purl.org/pdsinterop/link-metadata#deleted',
+                    'https://purl.org/pdsinterop/link-metadata#forget',
+                    'https://purl.org/pdsinterop/link-metadata#redirectPermanent',
+                    'https://purl.org/pdsinterop/link-metadata#redirectTemporary'
+                ];
+                result.data.forEach(card => {
+                    if (card.records.find(record => {
+                        var predicate = dereferencePrefixes(record.name, result.prefixes);
+                        if (hidePredicates.includes(predicate)) {
+                            return true;
+                        }
+                    })) {
+                        card.hidden = true;
+                    }
+                });
                 return result;
             })
             .then(result => {
@@ -299,6 +431,9 @@ const app = simply.app({
                     return null;
                 }
                 var usedPrefixes = {};
+                if (entity.type) {
+                    usedPrefixes['rdf'] = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+                }
                 entity.records.forEach(r => {
                     switch(r['data-simply-template']) {
                         case 'NamedNode':
@@ -617,7 +752,10 @@ const solidSession = getDefaultSession();
 
 const solidApi = {
     fetch: function(url, loginInfo) {
-        const parser = new Parser({blankNodePrefix: '', baseIRI: url});
+        var cleanUrl = new URL(url);
+        cleanUrl.hash = '';
+        cleanUrl = cleanUrl.href;
+        const parser = new Parser({blankNodePrefix: '', baseIRI: cleanUrl});
 		var fetchParams = {
 			mode: 'cors',
 			headers: {
@@ -627,15 +765,15 @@ const solidApi = {
 		if (loginInfo && loginInfo.username && loginInfo.password) {
 			fetchParams.headers.Authorization = 'Basic '+btoa(loginInfo.username+':'+loginInfo.password);
 		}
-		return fetch(url, fetchParams)
+		return fetch(cleanUrl, fetchParams)
 			.catch(error => {
-		        return solidSession.fetch(url)
+		        return solidSession.fetch(cleanUrl)
 			})
             .then(response => {
                 if (response.ok) {
                     return response.text();
                 } else {
-					return solidSession.fetch(url).then(response => {
+					return solidSession.fetch(cleanUrl).then(response => {
 						if (response.ok) {
 							return response.text();
 						} else {
@@ -846,8 +984,43 @@ solidSession.handleIncomingRedirect({url: window.location.href, restorePreviousS
                 if (e.target.closest('form')) {
                     return; // handle form enters normally
                 }
-                let records = e.target.closest('[data-simply-list="records"]');
-                debugger;
+                let recordsEl = e.target.closest('[data-simply-list="records"]');
+                if (e.target.name=='value') {
+                    if (e.target.selectionEnd==e.target.value.length) { // cursor at end of input
+                        let records = recordsEl.dataBinding.config.data.records;
+                        let path = e.target.dataBinding.config.parentKey;
+                        path = path.substring(0, path.length-1);
+                        let index = parseInt(path.substring(path.lastIndexOf('/')+1, path.length));
+                        let entity = e.target.closest('.zett-entity');
+                        records.splice(index+1, 0, {
+                            'data-simply-template': 'Literal',
+                            'name': '',
+                            'value': ''
+                        });
+                        window.setTimeout(() => {
+                            entity.querySelector('.records .ds-form-group:nth-child('+(index+2)+') input[type="text"]').focus();
+                        },100);
+                    }
+                    if (e.target.selectionEnd==0) {
+                        if (e.target.value) {
+                            // insert entry before current record, with same name and empty value, focus on current entry
+                            let records = recordsEl.dataBinding.config.data.records;
+                            let path = e.target.dataBinding.config.parentKey;
+                            path = path.substring(0, path.length-1);
+                            let index = parseInt(path.substring(path.lastIndexOf('/')+1, path.length));
+                            let entity = e.target.closest('.zett-entity');
+                            let record = records[index];
+                            records.splice(index, 0, {
+                                'data-simply-template': record['data-simply-template'],
+                                'name': record.name,
+                                'value': ''
+                            });
+                            window.setTimeout(() => {
+                                entity.querySelector('.records .ds-form-group:nth-child('+(index+1)+') input[name="value"]').focus();
+                            },100);
+                        }
+                    }
+                }
             }            
             e.preventDefault();
             return false;
@@ -918,6 +1091,12 @@ interact('.zett-pane').resizable({
 });
 
 var zettDrag = dragula([], {
+    invalid: function(el, handle) {
+        if (['INPUT','TEXTAREA','SELECT','OPTION'].includes(handle.tagName)) {
+            return true;
+        }
+        return false;
+    },
     accepts: function(el, target, source, sibling) {
         function getFileReference(path) {
             var pathnames = path.split('/').filter(Boolean);
@@ -980,6 +1159,14 @@ editor.transformers.position = {
         this.dataset.simplyPositionX = position.x || 0;
         this.dataset.simplyPositionY = position.y || 0;
         this.style.transform = `translate(${position.x}px, ${position.y}px`;
+        //FIXME: quick hack to keep selected cards selected after rerender
+        window.setTimeout(() => {
+            let selectedIndex = this.dataBinding.config.data.selectedIndex || 0;
+            let selectedCard = this.querySelector('.zett-entity:not(.zett-hidden):nth-child('+(selectedIndex+1)+')');
+            if (selectedCard) {
+                selectedCard.classList.remove('zett-pre-entity');
+            }
+        }, 100);
         return position;
     },
     extract: function() {
@@ -1018,3 +1205,13 @@ document.addEventListener("animationend", function(evt) {
         purgeTimer = window.setTimeout(purgeToasts, 200);
     }
 });
+
+function dereferencePrefixes(predicate, prefixes) {
+    if (predicate.indexOf(':')!==false) {
+        var prefix = predicate.split(':')[0];
+        if (prefixes[prefix]) {
+            predicate = prefixes[prefix]+predicate.split(':')[1];
+        }
+    }
+    return predicate;
+}
